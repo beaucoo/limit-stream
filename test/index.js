@@ -1,9 +1,10 @@
 require('should'); // 'should.js' https://github.com/visionmedia/should.js
+var es = require('event-stream');
+var _ = require('lodash');
 var limitStream = require('../index');
-var ArrayStream = require('arraystream');
 
 
-describe('Limit Stream', function () {
+describe('Limit Stream should emit', function () {
     "use strict";
 
 
@@ -14,178 +15,50 @@ describe('Limit Stream', function () {
 //        done();
 //    });
 
-//
-    function getDataStream(count) {
-        var a = [];
-        for (var i = 1; i < count + 1; i++) {
-            a.push({key:i});
-        }
 
-        return ArrayStream.create(a);
+    function getItems(count) {
+        return _.range(1, count + 1);
     }
 
 
-    describe('when input is less than the limit', function() {
-        var limit = 2;
-        var input = limit - 1;
-
-        it('data items should be emitted', function (done) {
-            var count = 0;
-
-            var ls = limitStream(limit);
-            ls.on('data', function (data) {
-                data.key.should.eql(++count);
-            });
-            ls.on('end', function () {
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
-
-
-        it('count should not be limited', function (done) {
-            var count = 0;
-
-            var ls = limitStream(limit);
-            ls.on('data', function (data) {
-                ++count;
-            });
-            ls.on('end', function () {
-                ls.count.should.equal(input);
-                count.should.equal(input);
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
-
-
-        it('there should not be more', function (done) {
-            var ls = limitStream(limit);
-            ls.on('end', function () {
-                ls.areMore.should.be.false;
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
-
-
-        it('the last item should be correct', function (done) {
-            var ls = limitStream(limit);
-            ls.on('end', function () {
-                ls.lastItem.should.eql({key:input});
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
+    it('fewer than the limit when input is less', function (done) {
+        var limit = 5;
+        var input = limit - 2;
+        var ls = limitStream(limit);
+        es.readArray(getItems(input)).pipe(ls).pipe(es.writeArray(function(err, outArray) {
+            (!err).should.be.true;
+            outArray.should.eql(getItems(input));
+            ls.count.should.equal(outArray.length);
+            ls.lastItem.should.eql(_.last(outArray));
+            done();
+        }));
     });
 
 
-    describe('when input is equal the limit', function() {
-        var limit = 2;
+    it('same as the limit when input is the same', function (done) {
+        var limit = 5;
         var input = limit;
-
-        it('data items should be emitted', function (done) {
-            var count = 0;
-
-            var ls = limitStream(limit);
-            ls.on('data', function (data) {
-                data.key.should.eql(++count);
-            });
-            ls.on('end', function () {
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
-
-
-        it('count should be limited', function (done) {
-            var count = 0;
-
-            var ls = limitStream(limit);
-            ls.on('data', function (data) {
-                ++count;
-            });
-            ls.on('end', function () {
-                ls.count.should.equal(limit);
-                count.should.equal(limit);
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
-
-
-        it('there should not be more', function (done) {
-            var ls = limitStream(limit);
-            ls.on('end', function () {
-                ls.areMore.should.be.false;
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
-
-
-        it('the last item should be correct', function (done) {
-            var ls = limitStream(limit);
-            ls.on('end', function () {
-                ls.lastItem.should.eql({key:limit});
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
+        var ls = limitStream(limit);
+        es.readArray(getItems(input)).pipe(ls).pipe(es.writeArray(function(err, outArray) {
+            (!err).should.be.true;
+            outArray.should.eql(getItems(limit));
+            ls.count.should.equal(outArray.length);
+            ls.lastItem.should.eql(_.last(outArray));
+            done();
+        }));
     });
 
 
-    describe('when input is greater than the limit', function() {
-        var limit = 2;
-        var input = limit + 1;
-
-        it('data items should be emitted', function (done) {
-            var count = 0;
-
-            var ls = limitStream(limit);
-            ls.on('data', function (data) {
-                data.key.should.eql(++count);
-            });
-            ls.on('end', function () {
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
-
-
-        it('count should be limited', function (done) {
-            var count = 0;
-
-            var ls = limitStream(limit);
-            ls.on('data', function (data) {
-                ++count;
-            });
-            ls.on('end', function () {
-                ls.count.should.equal(limit);
-                count.should.equal(limit);
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
-
-
-        it('there should not be more', function (done) {
-            var ls = limitStream(limit);
-            ls.on('end', function () {
-                ls.areMore.should.be.true;
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
-
-
-        it('the last item should be correct', function (done) {
-            var ls = limitStream(limit);
-            ls.on('end', function () {
-                ls.lastItem.should.eql({key:limit});
-                done();
-            });
-            getDataStream(input).pipe(ls);
-        });
+    it('same as the limit when input is more', function (done) {
+        var limit = 5;
+        var input = limit + 2;
+        var ls = limitStream(limit);
+        es.readArray(getItems(input)).pipe(ls).pipe(es.writeArray(function(err, outArray) {
+            (!err).should.be.true;
+            outArray.should.eql(getItems(limit));
+            ls.count.should.equal(outArray.length);
+            ls.lastItem.should.eql(_.last(outArray));
+            done();
+        }));
     });
 });

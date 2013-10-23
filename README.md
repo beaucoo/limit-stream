@@ -13,21 +13,22 @@ s.on('data', function(item) {
   console.log(item);
 });
 s.on('end', function() {
-  console.log("areMore: %s, count: %d, lastItem: %j", s.areMore, s.count, s.lastItem);
+  console.log("count: %d, lastItem: %j", s.count, s.lastItem);
 });
 
-// Then with some data stream having 11 items only the first 10 will be logged out.
+// Then with some data stream having 12 items only the first 10 will be logged out.
 dataStream.pipe(s);
 </code>
 </pre>
 
 
 ##Release Notes
+v2.0.0 Fixes serious bug where end() was not actually triggered
+v1.0.0 Removed 'areMore' since was erronous i.e. stream would not end when amount of available data matched what was provided.
 v0.0.1 First
 
 ##Use Cases
-Retrieve more data than desired thus detecting that more exists. Useful to indicate that more pages of data
-exist for further requests.
+Limit the stream to a given count and provide the last item
 
 ##Running Tests
 
